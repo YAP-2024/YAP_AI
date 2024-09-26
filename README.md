@@ -1,3 +1,12 @@
+# YAP_AI
+YAP_AI 야삐~~ 소영이는 야빠~~ 
+
+# Setup
+```
+conda create -n YAP python==3.10
+conda activate YAP
+```
+
 <div  align="center">
 
 # Contrastive Audio-Language Learning for Music
