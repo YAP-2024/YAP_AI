@@ -1,4 +1,3 @@
-
 # YAP_AI
 
 ## Setup
@@ -28,6 +27,7 @@ python train.py --audio_model {modelType}
 
 
 ---
+
 <div  align="center">
 
 # Contrastive Audio-Language Learning for Music
