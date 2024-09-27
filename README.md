@@ -1,11 +1,32 @@
 # YAP_AI
-YAP_AI 야삐~~ 소영이는 야빠~~ 
 
-# Setup
+## Setup
 ```
 conda create -n YAP python==3.10
 conda activate YAP
+pip install -r requirements.txt
+pip install -e .
 ```
+
+## Train
+```
+python train.py --audio_model {modelType}
+```
+`modelType` :  `AudioCNN`, `EfficientNet`, 
+
+## Using other models
+- `modules/audio_backbones.py` class 추가
+- `models/muscall.py` class MusCALL에 추가
+- `scripts/train.py` --audio_model에 choices 추가
+- `scripts/train.py` def update_audio_model_config 추가
+
+
+</br>
+</br>
+</br>
+
+
+---
 
 <div  align="center">
 

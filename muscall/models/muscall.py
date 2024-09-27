@@ -7,7 +7,7 @@ from transformers import CLIPTextModel
 from muscall.modules.textual_heads import TextTransformer
 from muscall.modules.audio_ssl import SimCLRAudio
 from muscall.modules.audio_backbones import ModifiedResNet
-
+from muscall.modules.audio_backbones import AudioCNN
 
 def contrastive_loss(logits: torch.Tensor) -> torch.Tensor:
     labels = torch.arange(len(logits), device=logits.device)
@@ -45,7 +45,7 @@ class MusCALL(nn.Module):
         super().__init__()
         audio_config = config.audio
         text_config = config.text
-
+     
         projection_dim = config.projection_dim
         audio_dim = audio_config.hidden_size
         text_dim = text_config.hidden_size
@@ -58,9 +58,17 @@ class MusCALL(nn.Module):
         self.type_loss = config.loss
 
         self.temperature = config.temperature
-
+        print(f"MusCALL model structure: {self}")
+        
         if config.audio.model == "ModifiedResNet":
             self.audio_backbone = ModifiedResNet(audio_config)
+        
+        #! cnn 추가
+        elif config.audio.model == 'AudioCNN':
+            self.audio_backbone = AudioCNN(audio_config)
+        
+        #! efficientNet 추가 
+
         if config.text.model == "TextTransformer":
             self.textual_head = TextTransformer(text_config)
         elif config.text.model == "CLIPTextModel":
@@ -79,8 +87,9 @@ class MusCALL(nn.Module):
                 encoder=self.audio_backbone,
                 audio_config=audio_config,
             )
-
+        
     def encode_audio(self, audio):
+        # print(f"MusCALL model structure: {self}")
         audio_features = self.audio_backbone(audio)
         audio_features = self.audio_projection(audio_features)
         return audio_features

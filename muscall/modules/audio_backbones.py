@@ -4,7 +4,7 @@ import torch
 import torchaudio
 from torch import nn
 import torch.nn.functional as F
-
+from torchvision.models import efficientnet_b0
 
 class AudioBackbone(nn.Module):
     def __init__(self, config):
@@ -235,4 +235,85 @@ class ModifiedResNet(nn.Module):
             x = self.final_avgpool(x).squeeze()
             x = self.final_linear(x)
 
+        return x
+
+
+class AudioCNN(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        self.setup_mel_spectrogram(config)
+        
+        self.conv_layers = nn.Sequential(
+            self.conv_block(1, 64, kernel_size=3, stride=1, padding=1),
+            self.conv_block(64, 128, kernel_size=3, stride=2, padding=1),
+            self.conv_block(128, 256, kernel_size=3, stride=2, padding=1),
+            self.conv_block(256, 512, kernel_size=3, stride=2, padding=1),
+        )
+        
+        self.adaptive_pool = nn.AdaptiveAvgPool2d((1, 1))
+        self.fc = nn.Linear(512, config.hidden_size)
+
+    def conv_block(self, in_channels, out_channels, **kwargs):
+        return nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, **kwargs),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True)
+        )
+
+    def setup_mel_spectrogram(self, config):
+        self.spec = torchaudio.transforms.MelSpectrogram(
+            sample_rate=config.sample_rate,
+            n_fft=config.n_fft,
+            f_min=config.f_min,
+            f_max=config.f_max,
+            n_mels=config.n_mels,
+            power=2,
+            normalized=True,
+        )
+        self.amplitude_to_db = torchaudio.transforms.AmplitudeToDB(top_db=100)
+
+    def forward(self, x):
+        spec = self.spec(x)
+        spec = self.amplitude_to_db(spec)
+        x = spec.unsqueeze(1)
+        
+        x = self.conv_layers(x)
+        x = self.adaptive_pool(x)
+        x = torch.flatten(x, 1)
+        x = self.fc(x)
+    
+        return x
+    
+
+
+class AudioEfficientNet(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        self.setup_mel_spectrogram(config)
+        
+        self.efficientnet = efficientnet_b0(pretrained=True)
+        self.efficientnet.features[0][0] = nn.Conv2d(1, 32, kernel_size=3, stride=2, padding=1, bias=False)
+        self.efficientnet.classifier = nn.Sequential(
+            nn.Dropout(p=0.2, inplace=True),
+            nn.Linear(1280, config.hidden_size),
+        )
+
+    def setup_mel_spectrogram(self, config):
+        self.spec = torchaudio.transforms.MelSpectrogram(
+            sample_rate=config.sample_rate,
+            n_fft=config.n_fft,
+            f_min=config.f_min,
+            f_max=config.f_max,
+            n_mels=config.n_mels,
+            power=2,
+            normalized=True,
+        )
+        self.amplitude_to_db = torchaudio.transforms.AmplitudeToDB(top_db=100)
+
+    def forward(self, x):
+        spec = self.spec(x)
+        spec = self.amplitude_to_db(spec)
+        x = spec.unsqueeze(1)
+        
+        x = self.efficientnet(x)
         return x

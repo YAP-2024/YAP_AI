@@ -7,7 +7,7 @@ training:
   device: cuda
 
   dataloader:
-    batch_size: 256
+    batch_size: 2  # !데이터셋 크기보다 작게 수정함 
     num_workers: 4
     shuffle: True
     pin_memory: True
