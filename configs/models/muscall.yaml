@@ -1,9 +1,9 @@
- model_config: 
+model_config: 
   model_name: muscall
   projection_dim: 512             # dimensionality of the multimodal projection layer
   temperature: null
   audio: 
-    model: ModifiedResNet         # name of the audio backbone model (ModifiedResNet supported)
+    model: ModifiedResNet         # name of the audio backbone model (ModifiedResNet, CNN, EfficientNet supported)
     pooling: attention            # pooling mechanism to obtain fixed-size audio features. One of [average, attention]
     audio_len_seconds: 20         # max lenght in seconds
     hidden_size: 256              # 
@@ -22,6 +22,17 @@
       p_noise: 0.3
       p_gain: 0.2
       p_pitch_shift: 0.4
+    # CNN specific parameters
+    cnn:
+      num_layers: 4               # number of convolutional layers
+      channels: [64, 128, 256, 512] # number of channels in each convolutional layer
+      kernel_size: 3              # kernel size for convolutional layers
+      stride: 2                   # stride for convolutional layers
+      padding: 1                  # padding for convolutional layers
+    # EfficientNet specific parameters
+    efficientnet:
+      version: "b0"               # EfficientNet version to use (b0, b1, b2, etc.)
+      pretrained: True            # whether to use pretrained weights
   text: 
     model: TextTransformer         # name of the textual head model. One of TextTransformer, CLIPTextModel
     pretrained: openai/clip-vit-base-patch32 # name of the pretrained textual head model

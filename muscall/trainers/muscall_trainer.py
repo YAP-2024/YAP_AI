@@ -32,18 +32,28 @@ class MusCALLTrainer(BaseTrainer):
     def load_dataset(self):
         self.logger.write("Loading dataset")
         dataset_name = self.config.dataset_config.dataset_name
+        
 
         if dataset_name == "audiocaption":
             self.train_dataset = AudioCaptionDataset(self.config.dataset_config)
+            self.logger.write(f"Train dataset loaded. Length: {len(self.train_dataset)}")
+        
             self.val_dataset = AudioCaptionDataset(self.config.dataset_config, dataset_type="val")
+            self.logger.write(f"Validation dataset loaded. Length: {len(self.val_dataset)}")
+ 
         else:
             raise ValueError("{} dataset is not supported.".format(dataset_name))
+        
+        if len(self.train_dataset) == 0:
+            raise ValueError("Train dataset is empty. Please check your data files and configuration.")
+
 
         self.train_loader = DataLoader(
             dataset=self.train_dataset,
             **self.config.training.dataloader,
             drop_last=True,
         )
+        self.logger.write(f"Train loader created. Number of batches: {len(self.train_loader)}")
         self.val_loader = DataLoader(
             dataset=self.val_dataset,
             **self.config.training.dataloader,
@@ -128,7 +138,9 @@ class MusCALLTrainer(BaseTrainer):
         for epoch in range(self.start_epoch, self.config.training.epochs):
             epoch_start_time = time.time()
 
+            print(len(self.train_loader))
             train_loss = self.train_epoch(self.train_loader, is_training=True)
+
             val_loss = self.train_epoch_val(self.val_loader)
 
             track_retrieval_metrics = True
@@ -166,6 +178,7 @@ class MusCALLTrainer(BaseTrainer):
     def train_epoch(self, data_loader, is_training):
         running_loss = 0.0
         n_batches = 0
+        
 
         if is_training:
             self.model.train()
