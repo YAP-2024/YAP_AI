@@ -36,7 +36,7 @@ def parse_args():
     parser.add_argument(
         "--audio_model",
         type=str,
-        choices=["ModifiedResNet", "AudioCNN", "EfficientNet", "AudioTransformer"],
+        choices=["ModifiedResNet", "AudioCNN", "EfficientNet", "AudioTransformer", "AudioAutoEncoder"],
         help="audio model architecture to use",
         default=None
     )
@@ -73,6 +73,13 @@ def update_audio_model_config(config, audio_model):
                 "dropout": 0.1,
                 "activation": "relu",
                 "pretrained": False
+            }
+    elif audio_model == "AudioAutoEncoder":
+        if "AudioAutoEncoder" not in config.model_config.audio:
+            config.model_config.audio.autoencoder = {
+                "encoder_layers": [512, 256],
+                "latent_dim": 256,
+                "dropout": 0.1,
             }
     return config
 

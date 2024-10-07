@@ -392,3 +392,61 @@ class PositionalEncoding(nn.Module):
         return self.dropout(x)
 
 
+class AudioAutoEncoder(nn.Module):
+    def __init__(self, config):
+        super(AudioAutoEncoder, self).__init__()
+        self.config = config
+        self.setup_mel_spectrogram(config)
+
+        self.d_model = config.get('hidden_size', 256)
+        self.latent_dim = config.get('latent_dim', 256)
+        self.output_size = config.get('output_size', 256)
+
+        self.encoder = nn.Sequential(
+            nn.Linear(self.d_model, 512),
+            nn.ReLU(),
+            nn.Linear(512, self.latent_dim)
+        )
+
+        self.fc_mu = nn.Linear(self.latent_dim, self.output_size)
+        self.fc_logvar = nn.Linear(256, self.output_size)
+
+    def setup_mel_spectrogram(self, config):
+        self.spec = torchaudio.transforms.MelSpectrogram(
+            sample_rate=config.sample_rate,
+            n_fft=config.n_fft,
+            f_min=config.f_min,
+            f_max=config.f_max,
+            n_mels=config.n_mels,
+            power=2,
+            normalized=True,
+        )
+        self.amplitude_to_db = torchaudio.transforms.AmplitudeToDB(top_db=100)
+
+    def reparameterize(self, mu, logvar):
+        std = torch.exp(0.5 * logvar)
+        eps = torch.randn_like(std)
+        return mu + eps * std
+
+    def forward(self, x):
+        spec = self.spec(x)
+        spec = self.amplitude_to_db(spec)
+        # torch.Size([2, 128, 626])
+
+        x = spec.unsqueeze(1)
+        # torch.Size([2, 1, 128, 626])
+
+        x = x.reshape(x.size(0), 313, -1)
+        # torch.Size([2, 313, 256])
+
+        encoded = self.encoder(x)
+
+        mu = self.fc_mu(encoded)
+        logvar = self.fc_logvar(encoded)
+
+        z = self.reparameterize(mu, logvar)
+        # torch.Size([2, 313, 256])
+        z = torch.mean(z, dim=1)
+        print(f"Latent Z Shape: {z.shape}")
+
+        return z
