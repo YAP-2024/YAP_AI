@@ -36,7 +36,7 @@ def parse_args():
     parser.add_argument(
         "--audio_model",
         type=str,
-        choices=["ModifiedResNet", "AudioCNN", "EfficientNet"],
+        choices=["ModifiedResNet", "AudioCNN", "EfficientNet", "AudioTransformer"],
         help="audio model architecture to use",
         default=None
     )
@@ -62,6 +62,17 @@ def update_audio_model_config(config, audio_model):
             config.model_config.audio.efficientnet = {
                 "version": "b0",
                 "pretrained": True
+            }
+    elif audio_model == "AudioTransformer":
+         if "AudioTransformer" not in config.model_config.audio:
+            config.model_config.audio.transformer = {
+                "num_layers": 6,
+                "num_heads": 8,
+                "d_model": 512,
+                "dim_feedforward": 2048,
+                "dropout": 0.1,
+                "activation": "relu",
+                "pretrained": False
             }
     return config
 
