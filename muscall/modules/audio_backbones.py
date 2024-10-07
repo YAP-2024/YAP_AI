@@ -5,6 +5,7 @@ import torchaudio
 from torch import nn
 import torch.nn.functional as F
 from torchvision.models import efficientnet_b0
+from torch.nn import TransformerEncoder, TransformerEncoderLayer
 
 class AudioBackbone(nn.Module):
     def __init__(self, config):
@@ -242,14 +243,14 @@ class AudioCNN(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.setup_mel_spectrogram(config)
-        
+
         self.conv_layers = nn.Sequential(
             self.conv_block(1, 64, kernel_size=3, stride=1, padding=1),
             self.conv_block(64, 128, kernel_size=3, stride=2, padding=1),
             self.conv_block(128, 256, kernel_size=3, stride=2, padding=1),
             self.conv_block(256, 512, kernel_size=3, stride=2, padding=1),
         )
-        
+
         self.adaptive_pool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(512, config.hidden_size)
 
@@ -276,21 +277,21 @@ class AudioCNN(nn.Module):
         spec = self.spec(x)
         spec = self.amplitude_to_db(spec)
         x = spec.unsqueeze(1)
-        
+
         x = self.conv_layers(x)
         x = self.adaptive_pool(x)
         x = torch.flatten(x, 1)
         x = self.fc(x)
-    
+
         return x
-    
+
 
 
 class AudioEfficientNet(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.setup_mel_spectrogram(config)
-        
+
         self.efficientnet = efficientnet_b0(pretrained=True)
         self.efficientnet.features[0][0] = nn.Conv2d(1, 32, kernel_size=3, stride=2, padding=1, bias=False)
         self.efficientnet.classifier = nn.Sequential(
@@ -314,6 +315,80 @@ class AudioEfficientNet(nn.Module):
         spec = self.spec(x)
         spec = self.amplitude_to_db(spec)
         x = spec.unsqueeze(1)
-        
+
         x = self.efficientnet(x)
         return x
+
+
+class AudioTransformer(nn.Module):
+    def __init__(self, config):
+        super(AudioTransformer, self).__init__()
+        self.config = config
+        self.setup_mel_spectrogram(config)
+
+        self.d_model = config.get('hidden_size', 512)
+        self.num_layers = config.get('num_layers', 6)
+        self.num_heads = config.get('num_heads', 8)
+        self.dim_feedforward = config.get('dim_feedforward', 2048)
+        self.dropout = config.get('dropout', 0.1)
+        self.output_size = config.get('output_size', 256)
+
+        self.positional_encoding = PositionalEncoding(self.d_model, self.dropout)
+
+        encoder_layers = TransformerEncoderLayer(
+            d_model=self.d_model,
+            nhead=self.num_heads,
+            dim_feedforward=self.dim_feedforward,
+            dropout=self.dropout
+        )
+        self.transformer_encoder = TransformerEncoder(encoder_layers, self.num_layers)
+        self.fc = nn.Linear(self.d_model, self.output_size)
+
+    def setup_mel_spectrogram(self, config):
+        self.spec = torchaudio.transforms.MelSpectrogram(
+            sample_rate=config.sample_rate,
+            n_fft=config.n_fft,
+            f_min=config.f_min,
+            f_max=config.f_max,
+            n_mels=config.n_mels,
+            power=2,
+            normalized=True,
+        )
+        self.amplitude_to_db = torchaudio.transforms.AmplitudeToDB(top_db=100)
+
+    def forward(self, x):
+        spec = self.spec(x)
+        spec = self.amplitude_to_db(spec)
+        x = spec.unsqueeze(1)
+        x = x.reshape(x.size(0), -1, self.d_model)
+
+        x = self.positional_encoding(x)
+        x = self.transformer_encoder(x)
+
+        x = x.mean(dim=1)
+        x = self.fc(x)
+
+        return x
+
+class PositionalEncoding(nn.Module):
+    def __init__(self, d_model, dropout=0.1, max_len=5000):
+        super().__init__()
+        self.dropout = nn.Dropout(p=dropout)
+
+        position = torch.arange(0, max_len).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2) * -(torch.log(torch.tensor(10000.0)) / d_model))
+        pe = torch.zeros(max_len, 1, d_model)
+        pe[:, 0, 0::2] = torch.sin(position * div_term)
+        pe[:, 0, 1::2] = torch.cos(position * div_term)
+        self.register_buffer('pe', pe)
+
+    def forward(self, x):
+        pe = self.pe[:x.size(1), :].expand(x.size(1), x.size(0), -1).permute(1, 0, 2)
+
+        print(f"Positional Encoding shape (after expand): {pe.shape}")
+        print(f"Input shape before adding positional encoding: {x.shape}")
+
+        x = x + pe
+        return self.dropout(x)
+
+
