@@ -5,3 +5,7 @@
 .ipynb_checkpoints/
 save/
 **venv
+
+data/
+
+scripts/core

@@ -67,32 +67,20 @@ class AudioCaptionDataset(Dataset):
 
         return self.captions[idx]
 
-    def _crop_audio(self, mmapped_array):
-        if np.shape(mmapped_array)[0] == 2:
-            audio_length = np.shape(mmapped_array)[1]
-        else:
-            audio_length = np.shape(mmapped_array)[0]
+    def _crop_audio(self, audio):
+        audio_length = len(audio)
 
         if audio_length <= self.num_samples:
-            start_index = 0
-            end_index = None
+            return audio
         else:
             if self._dataset_type == "train" and self.random_crop:
                 start_index = np.random.randint(0, audio_length - self.num_samples)
             else:
                 # for validation and testing sets, take a central crop
                 start_index = (audio_length - self.num_samples) // 2
-                # start_index = 0
             end_index = start_index + self.num_samples
 
-        # downmix to mono if # of channels = 2
-        if np.shape(mmapped_array)[0] == 2:
-            audio = (
-                mmapped_array[:, start_index:end_index].astype("float32").mean(axis=0)
-            )
-        else:
-            audio = mmapped_array[start_index:end_index].astype("float32")
-        return audio
+            return audio[start_index:end_index]
 
     def get_audio(self, idx):
         try:
@@ -100,12 +88,26 @@ class AudioCaptionDataset(Dataset):
         except:
             mmapped_array = np.load(self.audio_paths[idx], mmap_mode="r+")
 
-        audio = torch.tensor(self._crop_audio(mmapped_array), dtype=torch.float)
+        # print(f"Loaded audio shape: {mmapped_array.shape}")  # 디버깅용
+
+        # 2D 배열 처리 (160, 3876)
+        if mmapped_array.ndim == 2:
+            # 첫 번째 차원이 특성(feature)을 나타낸다고 가정
+            # 시간 축을 기준으로 평균을 취함
+            audio = mmapped_array.mean(axis=0)
+        else:
+            audio = mmapped_array
+
+        audio = torch.tensor(self._crop_audio(audio), dtype=torch.float)
+
+        # print(f"Processed audio shape: {audio.shape}")  # 디버깅용
 
         # zero pad short audio
         if len(audio) < self.num_samples:
             zeros_needed = torch.zeros(self.num_samples - len(audio))
             audio = torch.cat((audio, zeros_needed), dim=0)
+
+        # print(f"Final audio shape: {audio.shape}")  # 디버깅용
 
         return audio
 
