@@ -7,7 +7,7 @@ training:
   device: cuda
 
   dataloader:
-    batch_size: 2  # !데이터셋 크기보다 작게 수정함 
+    batch_size: 64 
     num_workers: 4
     shuffle: True
     pin_memory: True
@@ -15,19 +15,19 @@ training:
   optimizer:
     name: AdamW
     args:
-      lr: 5e-5
-      eps: 1e-6
-      betas: [0.9, 0.98]
-      weight_decay: 0.2
+      lr: 1e-6
+      eps: 1e-8
+      betas: [0.9, 0.999]
+      weight_decay: 0.01
   
   # Whether to use mixed precision training instead of full precision (FP32)
-  amp: true
+  amp: false
   # Early stopping configs
   early_stop:
     # Whether to use early stopping, (Default: false)
     enabled: false
     # Patience for early stoppings
-    patience: 4000
+    patience: 10
     # Criteria to be monitored for early stopping
     criteria: loss
     # Whether the monitored criteria should be minimized for early stopping

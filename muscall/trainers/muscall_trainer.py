@@ -219,6 +219,12 @@ class MusCALLTrainer(BaseTrainer):
             if is_training:
                 if self.config.training.amp:
                     self.scaler.scale(loss).backward()
+                    
+                    # 그래디언트 클리핑 추가
+                    self.scaler.unscale_(self.optimizer)
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
+
+                    
                     self.scaler.step(self.optimizer)
                     self.scaler.update()
                 else:
@@ -237,8 +243,12 @@ class MusCALLTrainer(BaseTrainer):
             running_loss += loss.item()
             n_batches += 1
 
+        
+        if n_batches == 0:
+            return 0.0  # 배치가 없을 경우 0.0을 반환
         return running_loss / n_batches
-
+    
+    
     def train_epoch_val(self, data_loader):
         with torch.no_grad():
             loss = self.train_epoch(data_loader, is_training=False)
