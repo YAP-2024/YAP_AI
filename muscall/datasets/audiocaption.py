@@ -105,6 +105,7 @@ class AudioCaptionDataset(Dataset):
         # zero pad short audio
         if len(audio) < self.num_samples:
             zeros_needed = torch.zeros(self.num_samples - len(audio))
+            audio = audio.view(-1)
             audio = torch.cat((audio, zeros_needed), dim=0)
 
         return audio

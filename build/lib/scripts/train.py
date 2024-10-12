@@ -63,6 +63,24 @@ def update_audio_model_config(config, audio_model):
                 "version": "b0",
                 "pretrained": True
             }
+    elif audio_model == "AudioTransformer":
+         if "AudioTransformer" not in config.model_config.audio:
+            config.model_config.audio.transformer = {
+                "num_layers": 6,
+                "num_heads": 8,
+                "d_model": 512,
+                "dim_feedforward": 2048,
+                "dropout": 0.1,
+                "activation": "relu",
+                "pretrained": False
+            }
+    elif audio_model == "AudioAutoEncoder":
+        if "AudioAutoEncoder" not in config.model_config.audio:
+            config.model_config.audio.autoencoder = {
+                "encoder_layers": [512, 256],
+                "latent_dim": 256,
+                "dropout": 0.1,
+            }
     return config
 
 
