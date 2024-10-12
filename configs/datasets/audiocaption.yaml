@@ -8,7 +8,7 @@ dataset_config:
   audio:
     sr: 16000
     crop_length: 20
-    random_crop: true
+    random_crop: false  
     augment: true
-    p_noise: 0.3
-    p_pitch_shift: 0.4
+    p_noise: 0.1
+    p_pitch_shift: 0.2
