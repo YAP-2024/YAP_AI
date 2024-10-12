@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import argparse
 import os
 from omegaconf import OmegaConf
@@ -36,7 +37,7 @@ def parse_args():
     parser.add_argument(
         "--audio_model",
         type=str,
-        choices=["ModifiedResNet", "AudioCNN", "EfficientNet"],
+        choices=["ModifiedResNet", "CNN", "EfficientNet"],
         help="audio model architecture to use",
         default=None
     )
@@ -48,8 +49,8 @@ def parse_args():
 
 def update_audio_model_config(config, audio_model):
     config.model_config.audio.model = audio_model
-    if audio_model == "AudioCNN":
-        if "AudioCNN" not in config.model_config.audio:
+    if audio_model == "CNN":
+        if "cnn" not in config.model_config.audio:
             config.model_config.audio.cnn = {
                 "num_layers": 4,
                 "channels": [64, 128, 256, 512],
@@ -63,6 +64,24 @@ def update_audio_model_config(config, audio_model):
                 "version": "b0",
                 "pretrained": True
             }
+    elif audio_model == "AudioTransformer":
+         if "AudioTransformer" not in config.model_config.audio:
+            config.model_config.audio.transformer = {
+                "num_layers": 6,
+                "num_heads": 8,
+                "d_model": 512,
+                "dim_feedforward": 2048,
+                "dropout": 0.1,
+                "activation": "relu",
+                "pretrained": False
+            }
+    elif audio_model == "AudioAutoEncoder":
+        if "AudioAutoEncoder" not in config.model_config.audio:
+            config.model_config.audio.autoencoder = {
+                "encoder_layers": [512, 256],
+                "latent_dim": 256,
+                "dropout": 0.1,
+            }
     return config
 
 
@@ -75,7 +94,7 @@ if __name__ == "__main__":
 
         if params.dataset == "audiocaption":
             dataset_conf_path = os.path.join(base_conf.env.base_dir, AudioCaptionDataset.config_path())
-           
+            AudioCaptionDataset.load_data(dataset_conf_path)
         else:
             raise ValueError("{} dataset not supported".format(params.dataset))
 
