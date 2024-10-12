@@ -8,6 +8,8 @@ from muscall.modules.textual_heads import TextTransformer
 from muscall.modules.audio_ssl import SimCLRAudio
 from muscall.modules.audio_backbones import ModifiedResNet
 from muscall.modules.audio_backbones import AudioCNN
+from muscall.modules.audio_backbones import AudioTransformer
+from muscall.modules.audio_backbones import AudioAutoEncoder
 
 def contrastive_loss(logits: torch.Tensor) -> torch.Tensor:
     labels = torch.arange(len(logits), device=logits.device)
@@ -66,8 +68,14 @@ class MusCALL(nn.Module):
         #! cnn 추가
         elif config.audio.model == 'AudioCNN':
             self.audio_backbone = AudioCNN(audio_config)
-        
-        #! efficientNet 추가 
+
+        elif config.audio.model == 'AudioTransformer':
+            self.audio_backbone = AudioTransformer(audio_config)
+
+        elif config.audio.model == 'AudioAutoEncoder':
+            self.audio_backbone = AudioAutoEncoder(audio_config)
+
+        #! efficientNet 추가
 
         if config.text.model == "TextTransformer":
             self.textual_head = TextTransformer(text_config)
