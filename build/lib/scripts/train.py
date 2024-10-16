@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import argparse
 import os
 from omegaconf import OmegaConf
@@ -37,7 +36,7 @@ def parse_args():
     parser.add_argument(
         "--audio_model",
         type=str,
-        choices=["ModifiedResNet", "CNN", "EfficientNet"],
+        choices=["ModifiedResNet", "CNN", "EfficientNet", "AudioTransformer", "AudioAutoEncoder"],
         help="audio model architecture to use",
         default=None
     )
