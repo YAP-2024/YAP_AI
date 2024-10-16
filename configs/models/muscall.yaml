@@ -35,17 +35,17 @@ model_config:
       pretrained: True            # whether to use pretrained weights
     # AudioTransformer
     AudioTransformer:
-      num_layers: 6,
-      num_heads: 8,
-      d_model: 512,
-      dim_feedforward: 2048,
-      dropout": 0.1,
-      ativation: "relu",
+      num_layers: 6
+      num_heads: 8
+      d_model: 512
+      dim_feedforward: 2048
+      dropout": 0.1
+      ativation: "relu"
       pretrained: False
     # AudioAutoEncdoer
     AudioAutoEncoder:
-      encoder_layers: [ 512, 256 ],
-      latent_dim: 256,
+      encoder_layers: [ 512, 256 ]
+      latent_dim: 256
       dropout: 0.1
   text: 
     model: TextTransformer         # name of the textual head model. One of TextTransformer, CLIPTextModel
